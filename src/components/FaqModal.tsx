@@ -31,34 +31,37 @@ export const FAQ_ITEMS: FaqItem[] = [
   },
   {
     id: 'why-250m-and-300m',
-    tag: '250m (+1) & 300m (+2)',
-    question: 'Why are 250m (+1) and 300m (+2) ahead of an Item Box Set so important?',
+    tag: 'FarDistance & +75m Tiers',
+    question: 'How do FarDistance thresholds and +75m tier promotions work for each position?',
     answer: (
       <>
         <p>
-          In <em>Mario Kart World</em>, the item lottery director dynamically promotes your item pool based on how far
-          behind <strong>1st place</strong> you are when you touch an Item Box (defined in{' '}
-          <code>Gyml/ItemTableCorrectParam/Default.game__ItemTableCorrectParam.bgyml</code> and evaluated in{' '}
-          <code>sub_00a7e140</code>, <code>sub_00a7cf90</code>, and <code>sub_00a7d390</code>):
+          In <em>Mario Kart World</em> (<code>v1.8.0</code>), each position has its own base distance threshold{' '}
+          <code>FarDistance&#123;P&#125;</code> behind <strong>1st place</strong> required to unlock an item tier
+          promotion (defined in <code>Gyml/ItemTableCorrectParam/Default.game__ItemTableCorrectParam.bgyml</code> and
+          evaluated in <code>sub_00a7cf90</code>, <code>sub_00a7d5c0</code>, and <code>sub_00a7d390</code>):
         </p>
         <ul>
           <li>
-            <strong>Under 250.0m behind 1st place:</strong> No distance promotion occurs; you pull from the base item
-            pool for your current placement.
+            <strong>Position-Specific <code>FarDistance&#123;P&#125;</code> (+1 Tier):</strong> Starts at{' '}
+            <strong>250.0m</strong> for <strong>2nd place</strong> (<code>FarDistance2 = 250.0m</code>) and increases by{' '}
+            <strong>+50.0m per position</strong> (<code>300.0m</code> for 3rd, <code>350.0m</code> for 4th, ...,{' '}
+            <code>750.0m</code> for 12th, up to <code>1,300.0m</code> for 23rd place).
           </li>
           <li>
-            <strong>At 250.0m behind 1st place (<code>+1</code> • <code>FarDistance2</code>):</strong> Your item pool is
-            promoted to the first distance threshold (at least the <strong>2nd-place item pool</strong>,{' '}
-            <code>effective_rank = min(rank, 1)</code>).
+            <strong>Additional Tiers Every +75.0m (<code>AdditionalFarDistance = 75.0m</code>):</strong> Once a racer
+            reaches their position&apos;s <code>FarDistance&#123;P&#125;</code> (+1 tier), every additional{' '}
+            <strong>+75.0m</strong> behind 1st place grants another <strong>+1 tier promotion</strong> (+2 tiers at{' '}
+            <code>FarDistance&#123;P&#125; + 75m</code>, +3 tiers at <code>FarDistance&#123;P&#125; + 150m</code>, etc.).
           </li>
           <li>
-            <strong>At 300.0m behind 1st place (<code>+2</code> • <code>FarDistance3</code>, +50m):</strong> Your item
-            pool is promoted another tier higher (<code>effective_rank = min(rank, 2)</code>), with additional promotion
-            tiers every <code>+50.0m</code> up to <code>1,300.0m</code> (<code>FarDistance23</code>).
+            <strong>Clamping at 12th / 24th Place:</strong> Promoted item pools are clamped at the final position pool
+            (<strong>12th place</strong> in 12-player races, or <strong>24th place</strong> in 24-player races).
           </li>
         </ul>
         <p>
-          To inspect the exact item pull percentages for each placement and distance tier, visit the companion site:{' '}
+          To inspect the exact item pull percentages for each position and promoted tier, visit the companion
+          site:{' '}
           <a
             href="https://liskadi.github.io/MKWorldItemProb/"
             target="_blank"

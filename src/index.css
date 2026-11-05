@@ -417,6 +417,10 @@ body::before {
   background: linear-gradient(90deg, #00b862, #0095ff);
 }
 
+#section-fardistance .section-eyebrow {
+  background: linear-gradient(90deg, #8b3dff, #ff2e93);
+}
+
 .panel-title-group h2 {
   font-family: 'Kanit', sans-serif;
   font-size: 1.75rem;
@@ -1296,6 +1300,343 @@ body::before {
   justify-content: center;
 }
 
+.distance-number-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.distance-number-input {
+  width: 108px;
+  padding-right: 28px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.92rem;
+  font-weight: 800;
+  text-align: right;
+  color: #ffffff;
+}
+
+.distance-unit-suffix {
+  position: absolute;
+  right: 11px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--mk-yellow);
+  pointer-events: none;
+}
+
+.placement-preset-select {
+  width: 272px;
+  min-width: 272px;
+  max-width: 272px;
+}
+
+.unlocks-checker-card {
+  background: linear-gradient(168deg, rgba(20, 27, 60, 0.95) 0%, rgba(13, 18, 40, 0.98) 100%);
+  border: 1.5px solid rgba(0, 212, 255, 0.28);
+  border-radius: 14px;
+  padding: 13px 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+
+.unlocks-checker-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.unlocks-checker-header h4 {
+  font-family: 'Kanit', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 900;
+  font-style: italic;
+  color: #ffffff;
+  letter-spacing: 0.03em;
+}
+
+.unlocks-checker-sub {
+  display: block;
+  font-size: 0.73rem;
+  color: var(--text-secondary);
+  margin-top: 1px;
+}
+
+.mini-lobby-switch {
+  display: inline-flex;
+  background: #0b0f24;
+  border: 1.5px solid rgba(165, 180, 224, 0.24);
+  border-radius: 9px;
+  padding: 2px;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.mini-lobby-btn {
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: 'Kanit', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 800;
+  font-style: italic;
+  cursor: pointer;
+  transition: all 0.14s ease;
+}
+
+.mini-lobby-btn:hover {
+  color: #ffffff;
+}
+
+.mini-lobby-btn.active {
+  background: var(--cursor-yellow-grad);
+  color: #101326;
+  box-shadow: 0 1px 0 #9e5800;
+}
+
+.unlocks-pills-grid {
+  display: grid;
+  gap: 6px;
+}
+
+.unlocks-pills-grid.is-12p {
+  grid-template-columns: repeat(auto-fill, minmax(98px, 1fr));
+}
+
+.unlocks-pills-grid.is-24p {
+  grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+  max-height: 215px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.unlock-pos-pill {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 6px 8px;
+  border-radius: 9px;
+  background: rgba(12, 16, 36, 0.85);
+  border: 1.5px solid rgba(165, 180, 224, 0.16);
+  color: var(--text-secondary);
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.14s ease;
+}
+
+.unlock-pos-pill:hover {
+  border-color: rgba(255, 222, 0, 0.55);
+  transform: translateY(-1px);
+}
+
+.unlock-pos-pill.is-unlocked {
+  background: linear-gradient(155deg, rgba(0, 230, 118, 0.15) 0%, rgba(0, 212, 255, 0.12) 100%);
+  border-color: rgba(0, 230, 118, 0.55);
+  color: #ffffff;
+}
+
+.unlock-pos-pill.is-selected-dist {
+  box-shadow: 0 0 0 2px var(--mk-yellow);
+  border-color: var(--mk-yellow);
+}
+
+.unlock-pos-pill.is-max-base {
+  opacity: 0.65;
+  cursor: default;
+}
+
+.unlock-pos-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.unlock-pos-ord {
+  font-family: 'Kanit', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 900;
+  font-style: italic;
+  color: #ffffff;
+}
+
+.unlock-shift-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(0, 230, 118, 0.24);
+  color: #5effa3;
+  border: 1px solid rgba(0, 230, 118, 0.45);
+}
+
+.unlock-shift-tag.is-clamped {
+  background: rgba(255, 222, 0, 0.22);
+  color: var(--mk-yellow);
+  border-color: rgba(255, 222, 0, 0.5);
+}
+
+.unlock-shift-tag.is-base-cap {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-muted);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.unlock-need-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--text-muted);
+}
+
+.unlock-pos-bottom {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+}
+
+.unlock-pos-bottom strong {
+  color: var(--mk-cyan);
+  font-weight: 800;
+}
+
+/* ==========================================================================
+   Section 03 — FarDistance Table & Rank Clamping Badges
+   ========================================================================== */
+.fardistance-table thead th {
+  border-bottom-color: rgba(179, 71, 255, 0.55);
+}
+
+.placement-badge {
+  display: inline-block;
+  min-width: 44px;
+  text-align: center;
+  padding: 3px 9px;
+  border-radius: 7px;
+  font-family: 'Kanit', sans-serif;
+  font-size: 0.84rem;
+  font-weight: 900;
+  font-style: italic;
+  background: rgba(255, 222, 0, 0.14);
+  color: var(--mk-yellow);
+  border: 1px solid rgba(255, 222, 0, 0.35);
+}
+
+.param-code-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(0, 212, 255, 0.12);
+  color: var(--mk-cyan);
+  border: 1px solid rgba(0, 212, 255, 0.28);
+}
+
+.base-rank-badge {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.78rem;
+  font-weight: 800;
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.fardist-cell-stack {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.fardist-meters {
+  color: #ffffff;
+  font-size: 0.86rem;
+  min-width: 58px;
+}
+
+.fardist-meters.is-clamped-muted {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.rank-step-pill {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 5px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: rgba(0, 230, 118, 0.14);
+  color: #5effa3;
+  border: 1px solid rgba(0, 230, 118, 0.32);
+}
+
+.clamp-pill {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 5px;
+  font-size: 0.71rem;
+  font-weight: 800;
+}
+
+.clamp-pill.is-max-hit {
+  background: rgba(255, 222, 0, 0.18);
+  color: var(--mk-yellow);
+  border: 1px solid rgba(255, 222, 0, 0.45);
+}
+
+.clamp-pill.is-clamped-cap,
+.clamp-pill.is-already-max {
+  background: rgba(255, 46, 76, 0.14);
+  color: #ff99ac;
+  border: 1px solid rgba(255, 46, 76, 0.35);
+}
+
+.clamp-summary-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.clamp-summary-badge {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 6px;
+  font-weight: 800;
+  font-size: 0.78rem;
+  background: rgba(0, 212, 255, 0.14);
+  color: #ffffff;
+  border: 1px solid rgba(0, 212, 255, 0.32);
+}
+
+.clamp-summary-badge.is-already-max {
+  background: rgba(255, 46, 76, 0.15);
+  color: #ff9eb0;
+  border-color: rgba(255, 46, 76, 0.38);
+}
+
+.clamp-cap-note {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+}
+
+.fardist-row-clamped {
+  background: rgba(255, 46, 76, 0.04);
+}
+
+.muted-dash {
+  color: var(--text-muted);
+}
+
 /* ==========================================================================
    Site Footer & FAQ Modal (Identical to MKWorldItemProb)
    ========================================================================== */
@@ -1723,7 +2064,7 @@ body::before {
   .section-nav {
     width: 100%;
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     gap: 6px;
   }
 
@@ -1744,6 +2085,14 @@ body::before {
   .control-box {
     flex: 1 1 auto;
     min-width: 0;
+  }
+
+  .placement-preset-select,
+  .distance-number-wrap,
+  .distance-number-input {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
   }
 
   .segmented-switch {

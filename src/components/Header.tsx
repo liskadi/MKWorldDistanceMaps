@@ -4,6 +4,7 @@ import { GAME_VERSION } from '../data/distanceMapsData';
 const NAV_ITEMS = [
   { id: 'section-explorer', num: '01', label: 'Distance Maps' },
   { id: 'section-reference', num: '02', label: 'Course List' },
+  { id: 'section-fardistance', num: '03', label: 'FarDistance Table' },
 ];
 
 export const Header: React.FC = () => {

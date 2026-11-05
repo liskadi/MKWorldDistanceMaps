@@ -1,15 +1,27 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { COURSES_DISTANCE_DATA } from '../data/distanceMapsData';
 import { CourseDistanceData, ItemSetData } from '../types/distanceMap';
+import {
+  ADDITIONAL_FAR_DISTANCE_M,
+  computeDynamicCourseLayout,
+  DynamicMarkerSpec,
+  evaluateAllPlacementsAtDistance,
+  formatOrdinal,
+  getFarDistanceBaseM,
+} from '../utils/promotionEngine';
 
 interface DistanceMapExplorerProps {
   selectedCourseIndex: number;
   onSelectCourse: (courseIndex: number) => void;
   selectedSetNumber: number | null;
   onSelectSetNumber: (setNumber: number | null) => void;
+  distanceAheadM: number;
+  onChangeDistanceAheadM: (distM: number) => void;
+  lobbySize: 12 | 24;
+  onChangeLobbySize: (size: 12 | 24) => void;
 }
 
-type ThresholdViewMode = 'both' | '250' | '300';
+type MarkerDisplayMode = 'both' | 'primary';
 
 const CUP_FILTERS = [
   { id: 'ALL', label: 'All (40)' },
@@ -43,10 +55,15 @@ export const DistanceMapExplorer: React.FC<DistanceMapExplorerProps> = ({
   onSelectCourse,
   selectedSetNumber,
   onSelectSetNumber,
+  distanceAheadM,
+  onChangeDistanceAheadM,
+  lobbySize,
+  onChangeLobbySize,
 }) => {
   const [cupFilter, setCupFilter] = useState('ALL');
-  const [thresholdMode, setThresholdMode] = useState<ThresholdViewMode>('both');
+  const [markerMode, setMarkerMode] = useState<MarkerDisplayMode>('both');
   const [hoveredSetNumber, setHoveredSetNumber] = useState<number | null>(null);
+  const [rawInputStr, setRawInputStr] = useState(String(distanceAheadM));
 
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
@@ -62,6 +79,10 @@ export const DistanceMapExplorer: React.FC<DistanceMapExplorerProps> = ({
     panY: number;
   } | null>(null);
   const didDragMoveRef = useRef(false);
+
+  useEffect(() => {
+    setRawInputStr(String(distanceAheadM));
+  }, [distanceAheadM]);
 
   useEffect(() => {
     setZoom(1);
@@ -154,6 +175,61 @@ export const DistanceMapExplorer: React.FC<DistanceMapExplorerProps> = ({
     () => COURSES_DISTANCE_DATA.filter((c) => matchesCupFilter(c, cupFilter)),
     [cupFilter]
   );
+
+  const primaryDistM = Math.max(25, Math.min(2500, Math.round(distanceAheadM)));
+  const secondaryDistM = primaryDistM + ADDITIONAL_FAR_DISTANCE_M;
+
+  const markerSpecs = useMemo<DynamicMarkerSpec[]>(
+    () => [
+      {
+        id: 'primary',
+        badgeText: '+1',
+        distanceM: primaryDistM,
+        variant: 'primary',
+      },
+      {
+        id: 'secondary',
+        badgeText: '+2',
+        distanceM: secondaryDistM,
+        variant: 'secondary',
+      },
+    ],
+    [primaryDistM, secondaryDistM]
+  );
+
+  const dynamicLayout = useMemo(
+    () => computeDynamicCourseLayout(course, markerSpecs),
+    [course, markerSpecs]
+  );
+
+  const placementUnlocks = useMemo(
+    () => evaluateAllPlacementsAtDistance(primaryDistM, lobbySize),
+    [primaryDistM, lobbySize]
+  );
+
+  const unlockedCount = useMemo(
+    () => placementUnlocks.filter((p) => p.effectiveShift > 0).length,
+    [placementUnlocks]
+  );
+
+  const maxPresetPlace = lobbySize === 12 ? 12 : 23;
+  const presetPlacements = useMemo(
+    () => Array.from({ length: maxPresetPlace - 1 }, (_, i) => i + 2),
+    [maxPresetPlace]
+  );
+
+  const matchingPlacementForDist = useMemo(
+    () =>
+      presetPlacements.find((p) => getFarDistanceBaseM(p) === primaryDistM) ??
+      0,
+    [presetPlacements, primaryDistM]
+  );
+
+  const commitDistanceValue = (val: number) => {
+    const clamped = Math.max(25, Math.min(2500, Math.round(val)));
+    onChangeDistanceAheadM(clamped);
+    setRawInputStr(String(clamped));
+  };
 
   const activeSpotlightSet = hoveredSetNumber ?? selectedSetNumber;
   const invZoom = 1 / zoom;
@@ -259,7 +335,9 @@ export const DistanceMapExplorer: React.FC<DistanceMapExplorerProps> = ({
     s: ItemSetData,
     anchor: [number, number],
     badge: [number, number],
-    distType: '250' | '300',
+    badgeText: string,
+    distM: number,
+    variant: 'primary' | 'secondary',
     isHighlighted: boolean,
     opacity: number,
     key: string
@@ -267,8 +345,6 @@ export const DistanceMapExplorer: React.FC<DistanceMapExplorerProps> = ({
     const [bx, by] = getZoomedBadgePos(anchor, badge);
     const r = isHighlighted ? 16.5 : 14.5;
     const innerR = r - 3.5;
-    const is300 = distType === '300';
-    const tierLabel = is300 ? '+2' : '+1';
 
     return (
       <g
@@ -279,7 +355,7 @@ export const DistanceMapExplorer: React.FC<DistanceMapExplorerProps> = ({
         onMouseLeave={() => setHoveredSetNumber(null)}
         onClick={() => toggleSetIsolation(s.setNumber)}
       >
-        <title>{`Item Set #${s.setNumber} → +${distType}m Ahead (${tierLabel})`}</title>
+        <title>{`Item Set #${s.setNumber} → +${distM}m Ahead (${badgeText})`}</title>
         <rect
           x={-r - 2.5}
           y={-r - 2.5}
@@ -302,7 +378,7 @@ export const DistanceMapExplorer: React.FC<DistanceMapExplorerProps> = ({
           width={innerR * 2}
           height={innerR * 2}
           rx={3.5}
-          fill={is300 ? '#211438' : '#122238'}
+          fill={variant === 'secondary' ? '#211438' : '#122238'}
           stroke="rgba(255,255,255,0.65)"
           strokeWidth={1}
         />
@@ -315,7 +391,7 @@ export const DistanceMapExplorer: React.FC<DistanceMapExplorerProps> = ({
           fontWeight="800"
           fontFamily="'JetBrains Mono', monospace"
         >
-          {tierLabel}
+          {badgeText}
         </text>
       </g>
     );
@@ -335,28 +411,82 @@ export const DistanceMapExplorer: React.FC<DistanceMapExplorerProps> = ({
 
         <div className="header-controls">
           <div className="control-box">
-            <span className="control-label">Promotion Markers</span>
-            <div className="segmented-switch" role="group" aria-label="Promotion Markers">
+            <label className="control-label" htmlFor="distance-ahead-input">
+              Distance Ahead (m)
+            </label>
+            <div className="distance-number-wrap">
+              <input
+                id="distance-ahead-input"
+                type="number"
+                min={25}
+                max={2500}
+                step={25}
+                className="sleek-input distance-number-input"
+                value={rawInputStr}
+                onChange={(e) => {
+                  setRawInputStr(e.target.value);
+                  const parsed = Number(e.target.value);
+                  if (!Number.isNaN(parsed) && parsed >= 25 && parsed <= 2500) {
+                    onChangeDistanceAheadM(Math.round(parsed));
+                  }
+                }}
+                onBlur={() => {
+                  const parsed = Number(rawInputStr);
+                  commitDistanceValue(Number.isNaN(parsed) ? 250 : parsed);
+                }}
+              />
+              <span className="distance-unit-suffix">m</span>
+            </div>
+          </div>
+
+          <div className="control-box">
+            <label className="control-label" htmlFor="placement-preset-select">
+              Placement Preset
+            </label>
+            <select
+              id="placement-preset-select"
+              className="sleek-select placement-preset-select"
+              value={matchingPlacementForDist}
+              onChange={(e) => {
+                const d = getFarDistanceBaseM(Number(e.target.value));
+                if (d !== null) commitDistanceValue(d);
+              }}
+            >
+              <option value={0}>Custom ({primaryDistM}m)</option>
+              {presetPlacements.map((p) => {
+                const d = getFarDistanceBaseM(p);
+                return (
+                  <option key={p} value={p}>
+                    {formatOrdinal(p)} Place — {d}m (FarDistance{p})
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+
+          <div className="control-box">
+            <span className="control-label">Map Markers</span>
+            <div
+              className="segmented-switch"
+              role="group"
+              aria-label="Map Markers Mode"
+            >
               <button
                 type="button"
-                className={`seg-btn ${thresholdMode === 'both' ? 'active' : ''}`}
-                onClick={() => setThresholdMode('both')}
+                className={`seg-btn ${markerMode === 'both' ? 'active' : ''}`}
+                onClick={() => setMarkerMode('both')}
               >
-                <span className="seg-dot" /> 250m &amp; 300m
+                <span className="seg-dot" /> +{primaryDistM}m &amp; +
+                {secondaryDistM}m
               </button>
               <button
                 type="button"
-                className={`seg-btn ${thresholdMode === '250' ? 'active' : ''}`}
-                onClick={() => setThresholdMode('250')}
+                className={`seg-btn ${
+                  markerMode === 'primary' ? 'active' : ''
+                }`}
+                onClick={() => setMarkerMode('primary')}
               >
-                <span className="seg-dot" /> 250m (+1)
-              </button>
-              <button
-                type="button"
-                className={`seg-btn ${thresholdMode === '300' ? 'active' : ''}`}
-                onClick={() => setThresholdMode('300')}
-              >
-                <span className="seg-dot" /> 300m (+2)
+                <span className="seg-dot" /> +{primaryDistM}m Only
               </button>
             </div>
           </div>
@@ -375,7 +505,10 @@ export const DistanceMapExplorer: React.FC<DistanceMapExplorerProps> = ({
                 const matches = COURSES_DISTANCE_DATA.filter((c) =>
                   matchesCupFilter(c, cf.id)
                 );
-                if (matches.length > 0 && !matches.some((m) => m.index === course.index)) {
+                if (
+                  matches.length > 0 &&
+                  !matches.some((m) => m.index === course.index)
+                ) {
                   onSelectCourse(matches[0].index);
                   onSelectSetNumber(null);
                 }
@@ -607,36 +740,37 @@ export const DistanceMapExplorer: React.FC<DistanceMapExplorerProps> = ({
                       activeSpotlightSet !== s.setNumber;
                     const isHighlighted = activeSpotlightSet === s.setNumber;
                     const opacity = isDimmed ? 0.12 : isHighlighted ? 0.95 : 0.55;
+                    const setLayout = dynamicLayout.get(s.setNumber)!;
+                    const [thrPrimary, thrSecondary] = setLayout.thresholds;
 
                     return (
                       <g key={`trace-${s.setNumber}`} style={{ opacity }}>
-                        {thresholdMode !== '300' &&
-                          s.hits250.map((h250, bIdx) => (
+                        {thrPrimary.hits.map((h1, bIdx) => (
+                          <polyline
+                            key={`p1-${bIdx}`}
+                            points={h1.path2d
+                              .map((p) => `${p[0]},${p[1]}`)
+                              .join(' ')}
+                            fill="none"
+                            stroke={s.colorHex}
+                            strokeWidth={(isHighlighted ? 7 : 4.5) * invZoom}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeDasharray={
+                              isHighlighted
+                                ? `${10 * invZoom} ${6 * invZoom}`
+                                : undefined
+                            }
+                            className={
+                              isHighlighted ? 'animated-trace-line' : ''
+                            }
+                          />
+                        ))}
+                        {markerMode === 'both' &&
+                          thrSecondary.hits.map((h2, bIdx) => (
                             <polyline
-                              key={`p250-${bIdx}`}
-                              points={h250.path2d
-                                .map((p) => `${p[0]},${p[1]}`)
-                                .join(' ')}
-                              fill="none"
-                              stroke={s.colorHex}
-                              strokeWidth={(isHighlighted ? 7 : 4.5) * invZoom}
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeDasharray={
-                                isHighlighted
-                                  ? `${10 * invZoom} ${6 * invZoom}`
-                                  : undefined
-                              }
-                              className={
-                                isHighlighted ? 'animated-trace-line' : ''
-                              }
-                            />
-                          ))}
-                        {thresholdMode !== '250' &&
-                          s.hits300.map((h300, bIdx) => (
-                            <polyline
-                              key={`p300-${bIdx}`}
-                              points={h300.path2d
+                              key={`p2-${bIdx}`}
+                              points={h2.path2d
                                 .map((p) => `${p[0]},${p[1]}`)
                                 .join(' ')}
                               fill="none"
@@ -740,34 +874,35 @@ export const DistanceMapExplorer: React.FC<DistanceMapExplorerProps> = ({
                       activeSpotlightSet !== null &&
                       activeSpotlightSet !== s.setNumber;
                     const opacity = isDimmed ? 0.14 : 0.95;
+                    const setLayout = dynamicLayout.get(s.setNumber)!;
+                    const [thrPrimary, thrSecondary] = setLayout.thresholds;
 
                     return (
                       <React.Fragment key={`leaders-${s.setNumber}`}>
                         {renderLeader(
                           s,
                           s.anchor2d,
-                          s.badge2d,
+                          setLayout.originBadge2d,
                           opacity,
                           `ldr-set-${s.setNumber}`
                         )}
-                        {thresholdMode !== '300' &&
-                          s.hits250.map((h, i) =>
+                        {thrPrimary.hits.map((h, i) =>
+                          renderLeader(
+                            s,
+                            h.anchor2d,
+                            h.badge2d,
+                            opacity,
+                            `ldr-p1-${s.setNumber}-${i}`
+                          )
+                        )}
+                        {markerMode === 'both' &&
+                          thrSecondary.hits.map((h, i) =>
                             renderLeader(
                               s,
                               h.anchor2d,
                               h.badge2d,
                               opacity,
-                              `ldr-250-${s.setNumber}-${i}`
-                            )
-                          )}
-                        {thresholdMode !== '250' &&
-                          s.hits300.map((h, i) =>
-                            renderLeader(
-                              s,
-                              h.anchor2d,
-                              h.badge2d,
-                              opacity,
-                              `ldr-300-${s.setNumber}-${i}`
+                              `ldr-p2-${s.setNumber}-${i}`
                             )
                           )}
                       </React.Fragment>
@@ -782,31 +917,36 @@ export const DistanceMapExplorer: React.FC<DistanceMapExplorerProps> = ({
                       activeSpotlightSet !== s.setNumber;
                     const isHighlighted = activeSpotlightSet === s.setNumber;
                     const opacity = isDimmed ? 0.14 : 1;
+                    const setLayout = dynamicLayout.get(s.setNumber)!;
+                    const [thrPrimary, thrSecondary] = setLayout.thresholds;
 
                     return (
                       <React.Fragment key={`thresh-${s.setNumber}`}>
-                        {thresholdMode !== '300' &&
-                          s.hits250.map((h, i) =>
+                        {thrPrimary.hits.map((h, i) =>
+                          renderThresholdBadge(
+                            s,
+                            h.anchor2d,
+                            h.badge2d,
+                            thrPrimary.badgeText,
+                            thrPrimary.distanceM,
+                            'primary',
+                            isHighlighted,
+                            opacity,
+                            `bp1-${s.setNumber}-${i}`
+                          )
+                        )}
+                        {markerMode === 'both' &&
+                          thrSecondary.hits.map((h, i) =>
                             renderThresholdBadge(
                               s,
                               h.anchor2d,
                               h.badge2d,
-                              '250',
+                              thrSecondary.badgeText,
+                              thrSecondary.distanceM,
+                              'secondary',
                               isHighlighted,
                               opacity,
-                              `b250-${s.setNumber}-${i}`
-                            )
-                          )}
-                        {thresholdMode !== '250' &&
-                          s.hits300.map((h, i) =>
-                            renderThresholdBadge(
-                              s,
-                              h.anchor2d,
-                              h.badge2d,
-                              '300',
-                              isHighlighted,
-                              opacity,
-                              `b300-${s.setNumber}-${i}`
+                              `bp2-${s.setNumber}-${i}`
                             )
                           )}
                       </React.Fragment>
@@ -821,7 +961,11 @@ export const DistanceMapExplorer: React.FC<DistanceMapExplorerProps> = ({
                       activeSpotlightSet !== s.setNumber;
                     const isHighlighted = activeSpotlightSet === s.setNumber;
                     const opacity = isDimmed ? 0.18 : 1;
-                    const [bx, by] = getZoomedBadgePos(s.anchor2d, s.badge2d);
+                    const setLayout = dynamicLayout.get(s.setNumber)!;
+                    const [bx, by] = getZoomedBadgePos(
+                      s.anchor2d,
+                      setLayout.originBadge2d
+                    );
                     const r = isHighlighted ? 19 : 16.5;
                     const innerR = r - 4;
 
@@ -939,6 +1083,111 @@ export const DistanceMapExplorer: React.FC<DistanceMapExplorerProps> = ({
             </div>
           </div>
 
+          <div className="unlocks-checker-card">
+            <div className="unlocks-checker-header">
+              <div>
+                <h4>TIER PROMOTIONS AT +{primaryDistM}m AHEAD</h4>
+                <span className="unlocks-checker-sub">
+                  {unlockedCount === 0
+                    ? 'No positions promoted yet (2nd needs 250m)'
+                    : `${unlockedCount} ${
+                        unlockedCount === 1 ? 'position' : 'positions'
+                      } promoted • Click any position to set distance`}
+                </span>
+              </div>
+              <div
+                className="mini-lobby-switch"
+                role="group"
+                aria-label="Lobby Size"
+              >
+                <button
+                  type="button"
+                  className={`mini-lobby-btn ${
+                    lobbySize === 12 ? 'active' : ''
+                  }`}
+                  onClick={() => onChangeLobbySize(12)}
+                >
+                  12P
+                </button>
+                <button
+                  type="button"
+                  className={`mini-lobby-btn ${
+                    lobbySize === 24 ? 'active' : ''
+                  }`}
+                  onClick={() => onChangeLobbySize(24)}
+                >
+                  24P
+                </button>
+              </div>
+            </div>
+
+            <div
+              className={`unlocks-pills-grid ${
+                lobbySize === 24 ? 'is-24p' : 'is-12p'
+              }`}
+            >
+              {placementUnlocks.map((p) => {
+                const isPromoted = p.effectiveShift > 0;
+                const isSelectedDist =
+                  p.farDistanceBaseM !== null &&
+                  p.farDistanceBaseM === primaryDistM;
+
+                return (
+                  <button
+                    key={p.placement}
+                    type="button"
+                    className={`unlock-pos-pill ${
+                      isPromoted ? 'is-unlocked' : ''
+                    } ${p.alreadyMaxBase ? 'is-max-base' : ''} ${
+                      isSelectedDist ? 'is-selected-dist' : ''
+                    }`}
+                    onClick={() => {
+                      if (p.farDistanceBaseM !== null) {
+                        commitDistanceValue(p.farDistanceBaseM);
+                      }
+                    }}
+                    title={
+                      p.farDistanceBaseM !== null
+                        ? `${p.ordinal} Place (${p.paramName} = ${p.farDistanceBaseM}m) • Click to set map to +${p.farDistanceBaseM}m`
+                        : `${p.ordinal} Place (${p.maxPosLabel} Max Pool)`
+                    }
+                  >
+                    <div className="unlock-pos-top">
+                      <span className="unlock-pos-ord">{p.ordinal}</span>
+                      {isPromoted ? (
+                        <span
+                          className={`unlock-shift-tag ${
+                            p.isClampedToMax ? 'is-clamped' : ''
+                          }`}
+                        >
+                          +{p.effectiveShift}
+                          {p.isClampedToMax ? ' MAX' : ''}
+                        </span>
+                      ) : p.alreadyMaxBase ? (
+                        <span className="unlock-shift-tag is-base-cap">
+                          MAX
+                        </span>
+                      ) : (
+                        <span className="unlock-need-tag">
+                          {p.farDistanceBaseM}m
+                        </span>
+                      )}
+                    </div>
+                    <div className="unlock-pos-bottom">
+                      {isPromoted ? (
+                        <strong>
+                          {p.basePosLabel} → {p.promotedPosLabel}
+                        </strong>
+                      ) : (
+                        <span>{p.basePosLabel} Pool</span>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           <div className="icon-legend-card">
             <div className="icon-legend-grid">
               <div className="legend-item">
@@ -951,23 +1200,23 @@ export const DistanceMapExplorer: React.FC<DistanceMapExplorerProps> = ({
               <div className="legend-item">
                 <span className="legend-badge-demo tier1-demo">+1</span>
                 <div>
-                  <strong>+250m Ahead</strong>
-                  <small>Tier 1 Promotion</small>
+                  <strong>+{primaryDistM}m Ahead</strong>
+                  <small>Primary Distance</small>
                 </div>
               </div>
               <div className="legend-item">
                 <span className="legend-badge-demo tier2-demo">+2</span>
                 <div>
-                  <strong>+300m Ahead</strong>
-                  <small>Tier 2 (+50m)</small>
+                  <strong>+{secondaryDistM}m Ahead</strong>
+                  <small>Next Tier (+75m)</small>
                 </div>
               </div>
             </div>
 
             <div className="companion-callout">
               <span>
-                Want to see exact item pull odds once 1st place is 250m or 300m
-                ahead?
+                Want to see exact item pull odds for each promoted position
+                pool?
               </span>
               <a
                 href="https://liskadi.github.io/MKWorldItemProb/"
@@ -1000,14 +1249,19 @@ export const DistanceMapExplorer: React.FC<DistanceMapExplorerProps> = ({
                   <tr>
                     <th>SET</th>
                     <th>POSITION</th>
-                    <th>+250m AHEAD</th>
-                    <th>+300m AHEAD</th>
+                    <th>+{primaryDistM}m AHEAD</th>
+                    {markerMode === 'both' && (
+                      <th>+{secondaryDistM}m AHEAD</th>
+                    )}
                   </tr>
                 </thead>
                 <tbody>
                   {course.itemSets.map((s: ItemSetData) => {
                     const isIsolated = selectedSetNumber === s.setNumber;
                     const isHovered = hoveredSetNumber === s.setNumber;
+                    const setLayout = dynamicLayout.get(s.setNumber)!;
+                    const [thrPrimary, thrSecondary] = setLayout.thresholds;
+
                     return (
                       <tr
                         key={s.setNumber}
@@ -1040,20 +1294,22 @@ export const DistanceMapExplorer: React.FC<DistanceMapExplorerProps> = ({
                           className="mono-cell"
                           style={{ color: s.colorHex, fontWeight: 700 }}
                         >
-                          {Math.round(s.d250TrackM)} m
-                          {s.d250WrapsLap && (
+                          {Math.round(thrPrimary.trackM)} m
+                          {thrPrimary.wrapsLap && (
                             <span className="wrap-pill">Next Lap</span>
                           )}
                         </td>
-                        <td
-                          className="mono-cell"
-                          style={{ color: s.colorHex, fontWeight: 700 }}
-                        >
-                          {Math.round(s.d300TrackM)} m
-                          {s.d300WrapsLap && (
-                            <span className="wrap-pill">Next Lap</span>
-                          )}
-                        </td>
+                        {markerMode === 'both' && (
+                          <td
+                            className="mono-cell"
+                            style={{ color: s.colorHex, fontWeight: 700 }}
+                          >
+                            {Math.round(thrSecondary.trackM)} m
+                            {thrSecondary.wrapsLap && (
+                              <span className="wrap-pill">Next Lap</span>
+                            )}
+                          </td>
+                        )}
                       </tr>
                     );
                   })}

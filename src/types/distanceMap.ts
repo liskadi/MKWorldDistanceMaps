@@ -4,25 +4,30 @@ export interface DistanceHitBranch {
   path2d: [number, number][];
 }
 
+export interface PathGraphNode {
+  pos3d: [number, number, number];
+  pos2d: [number, number];
+  out: number[];
+  isGoal: boolean;
+}
+
+export interface CoursePathGraph {
+  hasGoal: boolean;
+  nodes: PathGraphNode[];
+}
+
 export interface ItemSetData {
   setNumber: number;
   colorHex: string;
   boxCount: number;
   actorType: 'ItemBox' | 'HatenaBlockPanel';
-  sectionIdx: number;
   distFromStartM: number;
-  lapPct: number;
-  d250PhysicalM: number;
-  d300PhysicalM: number;
-  d250TrackM: number;
-  d250WrapsLap: boolean;
-  d300TrackM: number;
-  d300WrapsLap: boolean;
+  edgeU: number;
+  edgeV: number;
+  edgeT: number;
+  scaleFactor: number;
   anchor2d: [number, number];
-  badge2d: [number, number];
   boxes2d: [number, number][];
-  hits250: DistanceHitBranch[];
-  hits300: DistanceHitBranch[];
 }
 
 export interface CourseDistanceData {
@@ -33,11 +38,9 @@ export interface CourseDistanceData {
   category: 'Standard' | 'Patch v1.8.0';
   lapNum: number;
   numSections: number;
-  numCheckpoints: number;
   engineCourseLengthM: number;
   totalRaceLengthM: number;
   sectionLengthsM: number[];
-  camSizeXM: number;
   minimapUrl: string;
   fullMapDownloadUrl: string;
   imageRect: {
@@ -52,5 +55,6 @@ export interface CourseDistanceData {
   } | null;
   courseNote?: string;
   raceEdges2d: [[number, number], [number, number]][];
+  pathGraph: CoursePathGraph;
   itemSets: ItemSetData[];
 }

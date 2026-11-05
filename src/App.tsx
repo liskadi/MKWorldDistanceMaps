@@ -2,16 +2,30 @@ import React, { useState } from 'react';
 import { CourseReferenceTable } from './components/CourseReferenceTable';
 import { DistanceMapExplorer } from './components/DistanceMapExplorer';
 import { FaqModal } from './components/FaqModal';
+import { FarDistanceTable } from './components/FarDistanceTable';
 import { Header } from './components/Header';
 
 export const App: React.FC = () => {
   const [selectedCourseIndex, setSelectedCourseIndex] = useState(1);
   const [selectedSetNumber, setSelectedSetNumber] = useState<number | null>(null);
+  const [distanceAheadM, setDistanceAheadM] = useState(250);
+  const [lobbySize, setLobbySize] = useState<12 | 24>(12);
   const [isFaqOpen, setIsFaqOpen] = useState(false);
 
   const handleSelectCourseFromTable = (courseIndex: number) => {
     setSelectedCourseIndex(courseIndex);
     setSelectedSetNumber(null);
+    document
+      .getElementById('section-explorer')
+      ?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const handleSelectDistanceFromTable = (
+    distM: number,
+    targetLobbySize: 12 | 24
+  ) => {
+    setDistanceAheadM(distM);
+    setLobbySize(targetLobbySize);
     document
       .getElementById('section-explorer')
       ?.scrollIntoView({ behavior: 'smooth' });
@@ -31,11 +45,19 @@ export const App: React.FC = () => {
           onSelectCourse={setSelectedCourseIndex}
           selectedSetNumber={selectedSetNumber}
           onSelectSetNumber={setSelectedSetNumber}
+          distanceAheadM={distanceAheadM}
+          onChangeDistanceAheadM={setDistanceAheadM}
+          lobbySize={lobbySize}
+          onChangeLobbySize={setLobbySize}
         />
 
         <CourseReferenceTable
           selectedCourseIndex={selectedCourseIndex}
           onSelectCourseFromTable={handleSelectCourseFromTable}
+        />
+
+        <FarDistanceTable
+          onSelectDistanceFromTable={handleSelectDistanceFromTable}
         />
       </main>
 
