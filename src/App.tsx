@@ -81,11 +81,11 @@ export const App: React.FC = () => {
               </a>
 
               <a
-                href="https://github.com/liskadi"
+                href="https://github.com/liskadi/MKWorldDistanceMaps"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="footer-btn"
-                title="View on GitHub (github.com/liskadi)"
+                title="View on GitHub (github.com/liskadi/MKWorldDistanceMaps)"
               >
                 <svg
                   viewBox="0 0 24 24"
