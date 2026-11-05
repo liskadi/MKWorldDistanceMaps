@@ -1,0 +1,31 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Dependencies
+node_modules
+
+# Production build
+dist
+dist-ssr
+*.local
+*.tsbuildinfo
+
+# Internal documents & offline generation scripts
+docs
+scripts
+output
+__pycache__/
+*.py[cod]
+
+# Editor directories
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
